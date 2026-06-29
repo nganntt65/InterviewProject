@@ -1,0 +1,28 @@
+version: 2
+
+sources:
+  - name: bronze_lakehouse
+    description: "The raw landed transactional boundaries. Maintained by upstream real-time event streaming systems."
+
+    # Update these if you use a specific Unity Catalog asset name
+    catalog: workspace
+    schema: bronze
+
+    tables:
+      - name: raw_igaming_stream
+        description: "Append-only change data log carrying raw VARIANT JSON payloads of iGaming user mutations."
+
+        # Freshness guardrails alert you if the upstream pipeline stalls
+        freshness:
+          warn_after: { count: 6, period: hour }
+          error_after: { count: 24, period: hour }
+        loaded_at_field: ingested_at
+          # 🌟 THE CRITICAL FIX: Define types so unit tests don't check the warehouse
+        columns:
+            - name: raw_payload
+              data_type: variant  # Or string, depending on your Databricks table definition
+              description: "The raw semi-structured JSON payload object."
+            - name: ingested_at
+              data_type: timestamp
+              description: "The processing timestamp from the streaming ingest engine."
+

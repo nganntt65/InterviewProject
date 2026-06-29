@@ -1,0 +1,43 @@
+{
+  "name": "Daily_iGaming_Market_Share",
+  "git_source": {
+    "git_url": "https://github.com/your-org/igaming-dbt-transforms.git",
+    "git_provider": "gitHub",
+    "git_branch": "main"
+  },
+  "tasks": [
+    {
+      "task_key": "dbt_deps",
+      "description": "Fetch project dependencies.",
+      "dbt_task": {
+        "commands": ["dbt deps"],
+        "warehouse_id": "dc1ad4022d13590b"
+      }
+    },
+    {
+      "task_key": "medallion_silver",
+      "description": "Clean, deduplicate, and conform data into entity tables.",
+      "dbt_task": {
+        "commands": ["dbt run --select tag:silver", "dbt test --select tag:silver"],
+        "warehouse_id": "dc1ad4022d13590b",
+        "profiles_to_use": ["prod"]
+      }
+    },
+    {
+      "task_key": "medallion_gold",
+      "description": "Build atomic business facts and dimensions for ThoughtSpot optimization.",
+      "depends_on": [{"task_key": "medallion_silver"}],
+      "dbt_task": {
+        "commands": ["dbt run --select tag:gold", "dbt test --select tag:gold"],
+        "warehouse_id": "dc1ad4022d13590b",
+        "profiles_to_use": ["prod"]
+      }
+    }
+  ],
+  "schedule": {
+    "quartz_cron_expression": "0 0 4 * * ?",
+    "timezone_id": "UTC",
+    "pause_status": "UNPAUSED"
+  },
+  "max_concurrent_runs": 1
+}
