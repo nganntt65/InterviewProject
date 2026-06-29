@@ -7,7 +7,8 @@ on:
       - dev
     paths:
       - 'databricks.yml'
-      - 'models/**'
+      - 'dbt_igaming_market_share/**'
+      - '.github/workflows/**'
 
 jobs:
   deploy:
