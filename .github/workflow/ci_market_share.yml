@@ -6,9 +6,8 @@ on:
       - main
       - dev
     paths:
-      - 'models/**'
-      - 'macros/**'
-      - 'dbt_project.yml'
+      - 'dbt_igaming_market_share/**'
+      - '.github/workflows/**'
 
 jobs:
   validate-transformations:
