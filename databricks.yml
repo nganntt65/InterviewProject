@@ -1,0 +1,77 @@
+bundle:
+  name: igaming_market_share
+
+# Define custom variables that change across environments
+variables:
+  warehouse_id:
+    description: "The target Databricks SQL Warehouse ID"
+    type: string
+  catalog_name:
+    description: "The Unity Catalog destination name"
+    type: string
+  git_branch:
+    description: "The branch name to bind to the workflow execution layer"
+    type: string
+
+# Configure Environment Targets (Dev and Prod Profiles)
+targets:
+  dev:
+    mode: development
+    default: true
+    variables:
+      warehouse_id: "dc1ad4022d13590b"  # Replace with Dev Warehouse ID
+      catalog_name: "dev_igaming_events"
+      git_branch: "dev"
+
+  prod:
+    mode: production
+    variables:
+      warehouse_id: "dc1ad4022d13590b" # Replace with Prod Warehouse ID
+      catalog_name: "prod_igaming_events"
+      git_branch: "main"
+
+# Define the Orchestration Workflow Resources
+resources:
+  jobs:
+    daily_igaming_market_share:
+      name: "iGaming_Medallion_${bundle.target}_Pipeline"
+
+      git_source:
+        git_url: https://github.com/nganntt65/InterviewProject.git
+        git_provider: gitHub
+        git_branch: ${var.git_branch}
+
+      tasks:
+        - task_key: dbt_deps
+          description: "Fetch project dependencies."
+          dbt_task:
+            commands: ["dbt deps"]
+            warehouse_id: ${var.warehouse_id}
+
+        - task_key: "${bundle.target}_igaming_market_share_silver"
+          description: "Clean, deduplicate, and conform data into entity tables."
+          depends_on:
+            - task_key: dbt_deps
+          dbt_task:
+            commands: ["dbt run --select tag:silver", "dbt test --select tag:silver"]
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog_name}
+            schema: silver
+
+        - task_key: "${bundle.target}_igaming_market_share_gold"
+          description: "Build atomic business facts and dimensions for ThoughtSpot optimization."
+          depends_on:
+            - task_key: "${bundle.target}_igaming_market_share_silver"
+          dbt_task:
+            commands: ["dbt run --select tag:gold", "dbt test --select tag:gold"]
+            warehouse_id: ${var.warehouse_id}
+            catalog: ${var.catalog_name}
+            schema: gold
+
+      schedule:
+        quartz_cron_expression: "0 0 4 * * ?"
+        timezone_id: "UTC"
+        # Note: 'mode: development' above natively forces pause_status to PAUSED for the dev target!
+        pause_status: UNPAUSED
+
+      max_concurrent_runs: 1

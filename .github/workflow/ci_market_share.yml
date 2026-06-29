@@ -7,7 +7,6 @@ on:
       - 'models/**'
       - 'macros/**'
       - 'dbt_project.yml'
-      - 'profiles.yml'
 
 jobs:
   validate-transformations:
@@ -35,17 +34,17 @@ jobs:
 
       - name: Fetch Dependency Packages
         run: dbt deps
-        
+
       - name: Clean Environment Cache
         run: dbt clean
       - name: Verify Code Manifest Compilation
         # Added --target ci to force correct profile routing
-        run: dbt compile --profiles-dir . --target ci
+        run: dbt compile --profiles-dir . --target workflow
 
       - name: Execute Logical Unit Tests
         # Added --target ci to ensure in-memory tests align with CI context
-        run: dbt test --select "test_type:unit" --profiles-dir . --target ci
+        run: dbt test --select "test_type:unit" --profiles-dir . --target workflow
 
       - name: Run Schema Conversions (Targeted Integration Test)
         # Added --target ci to safely execute DDL validation inside the ephemeral CI schema
-        run: dbt run --select silver_igaming_events --profiles-dir . --target ci
+        run: dbt run --select silver_igaming_events --profiles-dir . --target workflow

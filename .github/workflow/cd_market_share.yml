@@ -1,37 +1,42 @@
-name: Databricks CD Production Deployment
+name: Databricks CD via Asset Bundles (DABs)
 
 on:
   push:
     branches:
       - main
+      - dev
     paths:
-      - 'databricks_config/databricks_job.json'
+      - 'databricks.yml'
       - 'models/**'
-      - 'profiles.yml'
 
 jobs:
-  refresh_production_dag:
+  deploy:
     runs-on: ubuntu-latest
-    env:
-      DATABRICKS_HOST: ${{ secrets.PROD_DB_HOST }}
-      DATABRICKS_TOKEN: ${{ secrets.PROD_DB_TOKEN }}
 
     steps:
-      - name: Checkout Master Repository
+      - name: Checkout Code Base
         uses: actions/checkout@v4
 
-      - name: Setup Databricks CLI Tooling
+      - name: Setup Databricks CLI
         uses: databricks/setup-cli@v1
 
-      - name: Idempotent Workspace Synchronization
+      # 🌟 THE ROUTER: Map Git Branch to DAB Target Environment profiles
+      - name: Resolve Bundle Environment Target
         run: |
-          echo "Scanning your cloud architecture for pre-existing jobs..."
-          JOB_ID=$(databricks jobs list --output json | jq -r '.jobs[] | select(.settings.name == "iGaming_Medallion_Daily_Pipeline") | .job_id' | head -n 1)
-          
-          if [ -z "$JOB_ID" ]; then
-            echo "🚀 No active workflow matching criteria. Instantiating master build..."
-            databricks jobs create --json @databricks_config/databricks_job.json
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "DAB_ENV=prod" >> $GITHUB_ENV
+            echo "DATABRICKS_HOST=${{ secrets.PROD_DB_HOST }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.PROD_DB_TOKEN }}" >> $GITHUB_ENV
           else
-            echo "🔄 Active workflow detected with system hash ID: $JOB_ID. Executing clean reset..."
-            databricks jobs reset --job-id $JOB_ID --json @databricks_config/databricks_job.json
+            echo "DAB_ENV=dev" >> $GITHUB_ENV
+            echo "DATABRICKS_HOST=${{ secrets.DEV_DB_HOST }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.DEV_DB_TOKEN }}" >> $GITHUB_ENV
           fi
+
+      # 🌟 THE VALIDATOR: Ensure YAML syntax compiles perfectly
+      - name: Validate Asset Bundle Syntax
+        run: databricks bundle validate -e ${{ env.DAB_ENV }}
+
+      # 🌟 THE DEPLOYER: Idempotently syncs configurations & overrides live state
+      - name: Deploy Databricks Asset Bundle
+        run: databricks bundle deploy -e ${{ env.DAB_ENV }}
