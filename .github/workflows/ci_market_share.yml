@@ -1,0 +1,51 @@
+name: Analytics Engineering DataOps CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'dbt_igaming_market_share/**'
+      - '.github/workflows/**'
+
+jobs:
+  validate-transformations:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABRICKS_HOST: ${{ secrets.DBT_PRODUCTION_DATABRICKS_HOST }}
+      DATABRICKS_HTTP_PATH: ${{ secrets.DBT_PRODUCTION_DATABRICKS_HTTP_PATH }}
+      DATABRICKS_TOKEN: ${{ secrets.DBT_PRODUCTION_DATABRICKS_TOKEN }}
+      GITHUB_RUN_ID: ${{ github.run_id }}
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dbt-Databricks Adapter
+        run: |
+          pip install dbt-databricks
+
+      - name: Fetch Dependency Packages
+        run: dbt deps
+
+      - name: Clean Environment Cache
+        run: dbt clean
+      - name: Verify Code Manifest Compilation
+        # Added --target ci to force correct profile routing
+        run: dbt compile --profiles-dir . --target workflows
+
+      - name: Execute Logical Unit Tests
+        # Added --target ci to ensure in-memory tests align with CI context
+        run: dbt test --select "test_type:unit" --profiles-dir . --target workflows
+
+      - name: Run Schema Conversions (Targeted Integration Test)
+        # Added --target ci to safely execute DDL validation inside the ephemeral CI schema
+        run: dbt run --select silver_igaming_events --profiles-dir . --target workflows
