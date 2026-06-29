@@ -1,0 +1,42 @@
+name: Databricks CD via Asset Bundles (DABs)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'databricks.yml'
+      - 'models/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Base
+        uses: actions/checkout@v4
+
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@v1
+
+      # 🌟 THE ROUTER: Map Git Branch to DAB Target Environment profiles
+      - name: Resolve Bundle Environment Target
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "DAB_ENV=prod" >> $GITHUB_ENV
+            echo "DATABRICKS_HOST=${{ secrets.PROD_DB_HOST }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.PROD_DB_TOKEN }}" >> $GITHUB_ENV
+          else
+            echo "DAB_ENV=dev" >> $GITHUB_ENV
+            echo "DATABRICKS_HOST=${{ secrets.DEV_DB_HOST }}" >> $GITHUB_ENV
+            echo "DATABRICKS_TOKEN=${{ secrets.DEV_DB_TOKEN }}" >> $GITHUB_ENV
+          fi
+
+      # 🌟 THE VALIDATOR: Ensure YAML syntax compiles perfectly
+      - name: Validate Asset Bundle Syntax
+        run: databricks bundle validate -e ${{ env.DAB_ENV }}
+
+      # 🌟 THE DEPLOYER: Idempotently syncs configurations & overrides live state
+      - name: Deploy Databricks Asset Bundle
+        run: databricks bundle deploy -e ${{ env.DAB_ENV }}

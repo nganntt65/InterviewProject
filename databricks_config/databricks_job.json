@@ -1,0 +1,46 @@
+{
+  "name": "iGaming_Medallion_${ENV_UPPER}_Pipeline",
+  "git_source": {
+    "git_url": "https://github.com/nganntt65/InterviewProject.git",
+    "git_provider": "gitHub",
+    "git_branch": "${GIT_BRANCH}"
+  },
+  "tasks": [
+    {
+      "task_key": "dbt_deps",
+      "description": "Fetch project dependencies.",
+      "dbt_task": {
+        "commands": ["dbt deps"],
+        "warehouse_id": "${WAREHOUSE_ID}"
+      }
+    },
+    {
+      "task_key": "[${ENV_UPPER}] igaming_market_share_silver",
+      "description": "Clean, deduplicate, and conform data into entity tables.",
+      "depends_on": [{"task_key": "medallion_bronze"}],
+      "dbt_task": {
+        "commands": ["dbt run --select tag:silver", "dbt test --select tag:silver"],
+        "warehouse_id": "${WAREHOUSE_ID}",
+        "catalog": "${CATALOG_NAME}",
+        "schema": "silver"
+      }
+    },
+    {
+      "task_key": "[${ENV_UPPER}] igaming_market_share_gold",
+      "description": "Build atomic business facts and dimensions for ThoughtSpot optimization.",
+      "depends_on": [{"task_key": "[${ENV_UPPER}] igaming_market_share_silver"}],
+      "dbt_task": {
+        "commands": ["dbt run --select tag:gold", "dbt test --select tag:gold"],
+        "warehouse_id": "${WAREHOUSE_ID}",
+        "catalog": "${CATALOG_NAME}",
+        "schema": "gold"
+      }
+    }
+  ],
+  "schedule": {
+    "quartz_cron_expression": "0 0 4 * * ?",
+    "timezone_id": "UTC",
+    "pause_status": "${SCHEDULE_STATUS}"
+  },
+  "max_concurrent_runs": 1
+}

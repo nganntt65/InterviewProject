@@ -1,0 +1,108 @@
+version: 2
+
+models:
+  - name: dim_users_scd2
+    description: "SCD Type 2 timeline table tracking state residency and user identifier migrations per operator brand."
+    columns:
+      - name: user_profile_hk
+        description: "Surrogate hash key uniquely identifying an historical state window."
+        tests:
+          - unique
+          - not_null
+      - name: user_email_hashed
+        description: "The immutable PII identifier used to bind migration pathways together."
+        tests:
+          - not_null
+
+  - name: fct_igaming_events
+    description: "Incremental activity fact table resolved temporally via processing timestamps against active dimensions."
+    columns:
+      - name: activity_id
+        description: "Surrogate key combination of the source transaction and operator brand identifier."
+        tests:
+          - unique
+          - not_null
+      - name: historical_state_code
+        description: "The physical location state the player resided in at the precise micro-moment of activity."
+        tests:
+          - not_null
+
+
+unit_tests:
+  # TEST 1: Asserts that system migrations capture the old_app_user_id cleanly without generating gaps
+  - name: test_scd2_migration_capture
+    model: dim_users_scd2
+    given:
+      - input: ref('igaming_events')
+        rows:
+          - user_email_hashed: "user_a"
+            operator_brand: "DraftKings"
+            app_user_id: "old_id_111"
+            state_code: "NJ"
+            activity_timestamp: "2026-06-20 10:00:00"
+          - user_email_hashed: "user_a"
+            operator_brand: "DraftKings"
+            app_user_id: "new_id_222" # Simulating a platform migration shift
+            state_code: "NJ"
+            activity_timestamp: "2026-06-21 14:00:00"
+    expect:
+      rows:
+        - user_email_hashed: "user_a"
+          operator_brand: "DraftKings"
+          app_user_id: "old_id_111"
+          old_app_user_id: null
+          state_code: "NJ"
+          valid_from: "2026-06-20 10:00:00"
+          valid_to: "2026-06-21 14:00:00"
+          is_current: false
+        - user_email_hashed: "user_a"
+          operator_brand: "DraftKings"
+          app_user_id: "new_id_222"
+          old_app_user_id: "old_id_111" # Confirms lineage is safely caught and moved forward
+          state_code: "NJ"
+          valid_from: "2026-06-21 14:00:00"
+          valid_to: "9999-12-31 23:59:59"
+          is_current: true
+
+  # TEST 2: Asserts that late-arriving transactions map to the historical state code instead of current active attributes
+  - name: test_temporal_point_in_time_fact_join
+    model: fct_igaming_events
+    # CRITICAL FIX: Tell dbt how to treat the is_incremental() macro block
+    overrides:
+      macros:
+        is_incremental: false # Mocking a full-refresh parse run
+    given:
+      - input: ref('igaming_events')
+        rows:
+          # Late arriving record from June 19th hitting processing gates on June 24th
+          - transaction_id: "tx_late_99"
+            operator_brand: "FanDuel"
+            user_email_hashed: "user_b"
+            app_user_id: "fd_66"
+            state_code: "PA"
+            activity_timestamp: "2026-06-19 12:00:00"
+            activity_date: "2026-06-19"
+            silver_processed_at: "2026-06-24 08:00:00"
+      - input: ref('dim_users_scd2')
+        rows:
+          - operator_brand: "FanDuel"
+            user_email_hashed: "user_b"
+            app_user_id: "fd_66"
+            old_app_user_id: null
+            state_code: "PA" # User was in PA on June 19
+            valid_from: "2026-06-15 00:00:00"
+            valid_to: "2026-06-20 00:00:00"
+          - operator_brand: "FanDuel"
+            user_email_hashed: "user_b"
+            app_user_id: "fd_66"
+            old_app_user_id: null
+            state_code: "NY" # User relocated to NY on June 20
+            valid_from: "2026-06-20 00:00:00"
+            valid_to: "9999-12-31 23:59:59"
+    expect:
+      rows:
+        - operator_brand: "FanDuel"
+          user_email_hashed: "user_b"
+          current_app_user_id: "fd_66"
+          historical_state_code: "PA" # Asserts the temporal link accurately joined 'PA' instead of 'NY'
+          activity_date: "2026-06-19"

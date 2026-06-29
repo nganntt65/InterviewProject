@@ -1,0 +1,23 @@
+
+# ==============================================================================
+# IDEs and System Files
+# ==============================================================================
+.idea/
+repo_rules/
+
+# ==============================================================================
+# dbt & Execution Artifacts
+# ==============================================================================
+dbt_igaming_market_share/logs/
+dbt_igaming_market_share/target/
+logs/
+dbt_igaming_market_share/dbt_packages/
+dbt_igaming_market_share/package-lock.yml
+
+
+
+# ==============================================================================
+# CRITICAL: Security & Credentials (Enforce environment variables instead)
+# ==============================================================================
+dbt_igaming_market_share/profiles.yml
+*.venv
