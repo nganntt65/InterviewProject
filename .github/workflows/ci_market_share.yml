@@ -46,9 +46,9 @@ jobs:
           echo "    workflow:" >> ./profiles.yml
           echo "      type: databricks" >> ./profiles.yml
           echo "      schema: ci_sandbox_${{ env.GITHUB_RUN_ID }}" >> ./profiles.yml
-          echo "      host: ${{ env.DATABRICKS_HOST }}" >> ./profiles.yml
-          echo "      http_path: ${{ env.DATABRICKS_HTTP_PATH }}" >> ./profiles.yml
-          echo "      token: ${{ env.DATABRICKS_TOKEN }}" >> ./profiles.yml
+          echo "      host: ${{ secrets.PROD_DB_HOST }}" >> ./profiles.yml
+          echo "      http_path: ${{ secrets.DATABRICKS_HTTP_PATH }}" >> ./profiles.yml
+          echo "      token: ${{ secrets.PROD_DB_TOKEN }}" >> ./profiles.yml
           cat ./profiles.yml
 
       - name: Fetch Dependency Packages
