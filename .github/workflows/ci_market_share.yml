@@ -2,7 +2,9 @@ name: Analytics Engineering DataOps CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - dev
     paths:
       - 'dbt_igaming_market_share/**'
       - '.github/workflows/**'
