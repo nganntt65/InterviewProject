@@ -10,7 +10,7 @@ variables:
     description: "The Unity Catalog destination name"
     type: string
   git_branch:
-    description: "The branch name to bind to the workflow execution layer"
+    description: "The branch name to bind to the workflows execution layer"
     type: string
 
 # Configure Environment Targets (Dev and Prod Profiles)
