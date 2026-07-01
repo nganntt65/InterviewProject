@@ -50,12 +50,13 @@ jobs:
           echo "      http_path: ${{ secrets.DATABRICKS_HTTP_PATH }}" >> ./profiles.yml
           echo "      token: ${{ secrets.PROD_DB_TOKEN }}" >> ./profiles.yml
           cat ./profiles.yml
-
-      - name: Fetch Dependency Packages
-        run: dbt deps --profiles-dir .
+      
 
       - name: Clean Environment Cache
         run: dbt clean --profiles-dir .
+
+      - name: Fetch Dependency Packages
+        run: dbt deps --profiles-dir .
 
       # Validate SQL compilation maps
       - name: Verify Code Manifest Compilation
