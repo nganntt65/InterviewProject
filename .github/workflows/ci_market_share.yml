@@ -49,6 +49,7 @@ jobs:
           echo "      host: ${{ env.DATABRICKS_HOST }}" >> ./profiles.yml
           echo "      http_path: ${{ env.DATABRICKS_HTTP_PATH }}" >> ./profiles.yml
           echo "      token: ${{ env.DATABRICKS_TOKEN }}" >> ./profiles.yml
+          cat ./profiles.yml
 
       - name: Fetch Dependency Packages
         run: dbt deps --profiles-dir .
