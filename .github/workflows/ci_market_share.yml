@@ -2,9 +2,7 @@ name: Analytics Engineering DataOps CI
 
 on:
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [ main ]
     paths:
       - 'dbt_igaming_market_share/**'
       - '.github/workflows/**'
@@ -12,6 +10,10 @@ on:
 jobs:
   validate-transformations:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./dbt_igaming_market_share
 
     env:
       DATABRICKS_HOST: ${{ secrets.DBT_PRODUCTION_DATABRICKS_HOST }}
@@ -28,30 +30,34 @@ jobs:
         with:
           python-version: '3.11'
 
+      # Explicitly install the Databricks engine connector
       - name: Install dbt-Databricks Adapter
         run: |
           pip install dbt-databricks
 
-      - name: Move to dbt Project Folder
-        run: cd dbt_igaming_market_share
+      # Safely write the local target configuration file using sequential echo targets
+      - name: Generate Temporary Local dbt Profile
+        run: |
+          echo "dbt_igaming_market_share:" > ./profiles.yml
+          echo "  target: workflow" >> ./profiles.yml
+          echo "  outputs:" >> ./profiles.yml
+          echo "    workflow:" >> ./profiles.yml
+          echo "      type: databricks" >> ./profiles.yml
+          echo "      schema: ci_sandbox_${{ env.GITHUB_RUN_ID }}" >> ./profiles.yml
+          echo "      host: ${{ env.DATABRICKS_HOST }}" >> ./profiles.yml
+          echo "      http_path: ${{ env.DATABRICKS_HTTP_PATH }}" >> ./profiles.yml
+          echo "      token: ${{ env.DATABRICKS_TOKEN }}" >> ./profiles.yml
 
       - name: Fetch Dependency Packages
-        run: |
-          cd dbt_igaming_market_share
-          dbt deps
+        run: dbt deps --profiles-dir .
 
       - name: Clean Environment Cache
-        run: |
-          cd dbt_igaming_market_share
-          dbt clean
-      - name: Verify Code Manifest Compilation
-        # Added --target ci to force correct profile routing
-        run: |
-          cd dbt_igaming_market_share
-          dbt compile
+        run: dbt clean --profiles-dir .
 
+      # Validate SQL compilation maps
+      - name: Verify Code Manifest Compilation
+        run: dbt compile --profiles-dir . --target workflow
+
+      # Run your custom in-memory logic test matrices
       - name: Execute Logical Unit Tests
-        # Added --target ci to ensure in-memory tests align with CI context
-        run: |
-          cd dbt_igaming_market_share
-          dbt test --select "test_type:unit"
+        run: dbt test --select "test_type:unit" --profiles-dir . --target workflow
