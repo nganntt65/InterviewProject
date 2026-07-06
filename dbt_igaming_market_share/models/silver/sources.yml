@@ -5,7 +5,7 @@ sources:
     description: "The raw landed transactional boundaries. Maintained by upstream real-time event streaming systems."
 
     # Update these if you use a specific Unity Catalog asset name
-    catalog: workspace
+    catalog: "{{ 'prod_igaming_events' if target.name == 'prod' else 'dev_igaming_events' }}"
     schema: bronze
 
     tables:
