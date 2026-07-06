@@ -35,6 +35,13 @@ resources:
   jobs:
     daily_igaming_market_share:
       name: "iGaming_Medallion_${bundle.target}_Pipeline"
+      # 🌟 ADD THIS: Define a reusable automated job cluster definition
+      job_clusters:
+        - job_cluster_key: igaming_pipeline_cluster
+          new_cluster:
+            spark_version: "14.3.x-scala2.12" # Adjust to match your workspace runtime standard
+            node_type_id: "Standard_D3_v2"    # Adjust to your cloud provider's instance size
+            num_workers: 1
 
       git_source:
         git_url: https://github.com/nganntt65/InterviewProject.git
@@ -43,6 +50,7 @@ resources:
 
       tasks:
         - task_key: dbt_deps
+          job_cluster_key: igaming_pipeline_cluster
           description: "Fetch project dependencies."
           dbt_task:
             project_directory: "./dbt_igaming_share"
@@ -50,6 +58,7 @@ resources:
             warehouse_id: ${var.warehouse_id}
 
         - task_key: "${bundle.target}_igaming_market_share_silver"
+          job_cluster_key: igaming_pipeline_cluster
           description: "Clean, deduplicate, and conform data into entity tables."
           depends_on:
             - task_key: dbt_deps
@@ -61,6 +70,7 @@ resources:
             schema: silver
 
         - task_key: "${bundle.target}_igaming_market_share_gold"
+          job_cluster_key: igaming_pipeline_cluster
           description: "Build atomic business facts and dimensions for ThoughtSpot optimization."
           depends_on:
             - task_key: "${bundle.target}_igaming_market_share_silver"
