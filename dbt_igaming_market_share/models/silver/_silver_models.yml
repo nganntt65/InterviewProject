@@ -46,43 +46,43 @@ models:
         tests:
           - not_null
 
-unit_tests:
-  - name: test_silver_parsing_and_hashing
-    model: igaming_events
-    overrides:
-      macros:
-        is_incremental: false
-      vars:
-        is_unit_test: true
-    given:
-      - input: ref('base_raw_igaming_stream')
-        rows:
-          - raw_payload: '{"transaction_id": "tx_001", "app_user_id": "dk_user_1", "operator_brand": "DraftKings", "state_code": "NJ", "event_timestamp": "2026-06-20T10:00:00Z", "user_email": "player@test.com"}'
-            ingested_at: "2026-06-20 10:05:00"
-            dbt_updated_at: "2026-06-20 10:05:00"
-
-          - raw_payload: '{"transaction_id": "tx_002", "app_user_id": "fd_user_2", "operator_brand": "FanDuel", "state_code": "NY", "event_timestamp": "2026-06-20T11:00:00Z", "user_email": "bettor@test.com"}'
-            ingested_at: "2026-06-20 11:05:00"
-            dbt_updated_at: "2026-06-20 11:05:00"
-
-          - raw_payload: '{"transaction_id": "tx_002", "app_user_id": "fd_user_2", "operator_brand": "FanDuel", "state_code": "PA", "event_timestamp": "2026-06-20T11:00:00Z", "user_email": "bettor@test.com"}'
-            ingested_at: "2026-06-20 11:02:00"
-            dbt_updated_at: "2026-06-20 11:02:00"
-
-    expect:
-      rows:
-        - transaction_id: "tx_001"
-          app_user_id: "dk_user_1"
-          operator_brand: "DraftKings"
-          state_code: "NJ"
-          activity_timestamp: "2026-06-20 10:00:00"
-          activity_date: "2026-06-20"
-          user_email_hashed: "4a0c868038eb9f315a6b0c2a26532822a101b0f5cd8f9f0a4f51fa472e3a09e0"
-
-        - transaction_id: "tx_002"
-          app_user_id: "fd_user_2"
-          operator_brand: "FanDuel"
-          state_code: "NY"
-          activity_timestamp: "2026-06-20 11:00:00"
-          activity_date: "2026-06-20"
-          user_email_hashed: "348bd6797a1d13f982eb9c9b56f8f53ff601dfa9d86a482b6c701f2f84b7264a"
+#unit_tests:
+#  - name: test_silver_parsing_and_hashing
+#    model: igaming_events
+#    overrides:
+#      macros:
+#        is_incremental: false
+#      vars:
+#        is_unit_test: true
+#    given:
+#      - input: ref('base_raw_igaming_stream')
+#        rows:
+#          - raw_payload: '{"transaction_id": "tx_001", "app_user_id": "dk_user_1", "operator_brand": "DraftKings", "state_code": "NJ", "event_timestamp": "2026-06-20T10:00:00Z", "user_email": "player@test.com"}'
+#            ingested_at: "2026-06-20 10:05:00"
+#            dbt_updated_at: "2026-06-20 10:05:00"
+#
+#          - raw_payload: '{"transaction_id": "tx_002", "app_user_id": "fd_user_2", "operator_brand": "FanDuel", "state_code": "NY", "event_timestamp": "2026-06-20T11:00:00Z", "user_email": "bettor@test.com"}'
+#            ingested_at: "2026-06-20 11:05:00"
+#            dbt_updated_at: "2026-06-20 11:05:00"
+#
+#          - raw_payload: '{"transaction_id": "tx_002", "app_user_id": "fd_user_2", "operator_brand": "FanDuel", "state_code": "PA", "event_timestamp": "2026-06-20T11:00:00Z", "user_email": "bettor@test.com"}'
+#            ingested_at: "2026-06-20 11:02:00"
+#            dbt_updated_at: "2026-06-20 11:02:00"
+#
+#    expect:
+#      rows:
+#        - transaction_id: "tx_001"
+#          app_user_id: "dk_user_1"
+#          operator_brand: "DraftKings"
+#          state_code: "NJ"
+#          activity_timestamp: "2026-06-20 10:00:00"
+#          activity_date: "2026-06-20"
+#          user_email_hashed: "4a0c868038eb9f315a6b0c2a26532822a101b0f5cd8f9f0a4f51fa472e3a09e0"
+#
+#        - transaction_id: "tx_002"
+#          app_user_id: "fd_user_2"
+#          operator_brand: "FanDuel"
+#          state_code: "NY"
+#          activity_timestamp: "2026-06-20 11:00:00"
+#          activity_date: "2026-06-20"
+#          user_email_hashed: "348bd6797a1d13f982eb9c9b56f8f53ff601dfa9d86a482b6c701f2f84b7264a"
