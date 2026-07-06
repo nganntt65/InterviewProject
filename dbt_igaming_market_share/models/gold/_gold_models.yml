@@ -50,7 +50,7 @@ unit_tests:
         - user_email_hashed: "user_a"
           operator_brand: "DraftKings"
           app_user_id: "old_id_111"
-          old_app_user_id: null
+          prev_app_user_id: null
           state_code: "NJ"
           valid_from: "2026-06-20 10:00:00"
           valid_to: "2026-06-21 14:00:00"
@@ -58,7 +58,7 @@ unit_tests:
         - user_email_hashed: "user_a"
           operator_brand: "DraftKings"
           app_user_id: "new_id_222"
-          old_app_user_id: "old_id_111" # Confirms lineage is safely caught and moved forward
+          prev_app_user_id: "old_id_111" # Confirms lineage is safely caught and moved forward
           state_code: "NJ"
           valid_from: "2026-06-21 14:00:00"
           valid_to: "9999-12-31 23:59:59"
@@ -88,14 +88,14 @@ unit_tests:
           - operator_brand: "FanDuel"
             user_email_hashed: "user_b"
             app_user_id: "fd_66"
-            old_app_user_id: null
+            prev_app_user_id: null
             state_code: "PA" # User was in PA on June 19
             valid_from: "2026-06-15 00:00:00"
             valid_to: "2026-06-20 00:00:00"
           - operator_brand: "FanDuel"
             user_email_hashed: "user_b"
             app_user_id: "fd_66"
-            old_app_user_id: null
+            prev_app_user_id: null
             state_code: "NY" # User relocated to NY on June 20
             valid_from: "2026-06-20 00:00:00"
             valid_to: "9999-12-31 23:59:59"
