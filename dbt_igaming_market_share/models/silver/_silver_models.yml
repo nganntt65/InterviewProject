@@ -1,27 +1,28 @@
 version: 2
 
 models:
-  # 🌟 NEW: The base model definition that wraps the CDF columns
+  # 🌟 FIXED: Changed raw_payload data_type to variant for proper JSON path resolution
   - name: base_raw_igaming_stream
     description: "Interface proxy model capturing Delta CDF streaming metadata schema for unit testing compatibility."
     columns:
     - name: raw_payload
-      data_type: string
+      data_type: variant # 👈 Changed from string to variant
     - name: ingested_at
       data_type: timestamp
     - name: dbt_updated_at
       data_type: timestamp
+
   - name: igaming_events
     description: "Primary clean transaction ledger parsed from Bronze. Single parsing boundary for variant objects."
     columns:
       - name: transaction_id
-        data_type: string # 🌟 Fixed: Prevents cache lookup errors in CI
+        data_type: string
         description: "Primary key identifier for a discrete transaction."
         tests:
           - unique
           - not_null
       - name: app_user_id
-        data_type: string # 🌟 Added: Matches the test expectation output
+        data_type: string
         description: "Downstream user alignment identifier."
       - name: operator_brand
         data_type: string
@@ -34,10 +35,10 @@ models:
         tests:
           - not_null
       - name: activity_timestamp
-        data_type: timestamp # 🌟 Added: Explicit type matching for unit tests
+        data_type: timestamp
         description: "The event time parsed into a true timestamp object."
       - name: activity_date
-        data_type: date # 🌟 Added: Explicit type matching for date logic
+        data_type: date
         description: "Partition-friendly date string derived from the event timestamp."
       - name: user_email_hashed
         data_type: string
@@ -52,28 +53,24 @@ unit_tests:
       macros:
         is_incremental: false
       vars:
-        is_unit_test: true # 🌟 Routes around table_changes() to use standard source mocking
+        is_unit_test: true
     given:
       - input: ref('base_raw_igaming_stream')
         rows:
-          # Scenario 1: A standard fresh insert transaction
           - raw_payload: '{"transaction_id": "tx_001", "app_user_id": "dk_user_1", "operator_brand": "DraftKings", "state_code": "NJ", "event_timestamp": "2026-06-20T10:00:00Z", "user_email": "player@test.com"}'
             ingested_at: "2026-06-20 10:05:00"
             dbt_updated_at: "2026-06-20 10:05:00"
 
-          # Scenario 2: An update post-image (this should be captured by your filter logic)
           - raw_payload: '{"transaction_id": "tx_002", "app_user_id": "fd_user_2", "operator_brand": "FanDuel", "state_code": "NY", "event_timestamp": "2026-06-20T11:00:00Z", "user_email": "bettor@test.com"}'
             ingested_at: "2026-06-20 11:05:00"
             dbt_updated_at: "2026-06-20 11:05:00"
 
-          # Scenario 3: An update pre-image (your SQL filter where _change_type in (...) will skip this row!)
           - raw_payload: '{"transaction_id": "tx_002", "app_user_id": "fd_user_2", "operator_brand": "FanDuel", "state_code": "PA", "event_timestamp": "2026-06-20T11:00:00Z", "user_email": "bettor@test.com"}'
             ingested_at: "2026-06-20 11:02:00"
             dbt_updated_at: "2026-06-20 11:02:00"
 
     expect:
       rows:
-        # Expectation for Scenario 1
         - transaction_id: "tx_001"
           app_user_id: "dk_user_1"
           operator_brand: "DraftKings"
@@ -82,7 +79,6 @@ unit_tests:
           activity_date: "2026-06-20"
           user_email_hashed: "4a0c868038eb9f315a6b0c2a26532822a101b0f5cd8f9f0a4f51fa472e3a09e0"
 
-        # Expectation for Scenario 2 (Verifies state_code is updated to 'NY' and pre-image is successfully ignored)
         - transaction_id: "tx_002"
           app_user_id: "fd_user_2"
           operator_brand: "FanDuel"
