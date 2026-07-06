@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Databricks CLI
-        uses: databricks/setup-cli@v1
+        uses: databricks/setup-cli@main
 
       # 🌟 THE ROUTER: Map Git Branch to DAB Target Environment profiles
       - name: Resolve Bundle Environment Target
