@@ -1,6 +1,6 @@
 {{ config(
     materialized='incremental',
-    incremental_strategy='append', -- 🌟 THE FIX: Switch to append-only for zero merge overhead
+    incremental_strategy='append',
     file_format='delta',
     on_schema_change='append_new_columns'
 ) }}
