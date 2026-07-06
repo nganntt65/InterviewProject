@@ -59,6 +59,10 @@ jobs:
       - name: Fetch Dependency Packages
         run: dbt deps --profiles-dir .
 
+      # 🌟 THE FIX: Generate zero-cost empty table structures for metadata lookup
+      - name: Initialize Empty Schema Skeletons for Unit Testing
+        run: dbt run --empty --profiles-dir . --target workflow
+
       # Validate SQL compilation maps
       - name: Verify Code Manifest Compilation
         run: dbt compile --profiles-dir . --target workflow
