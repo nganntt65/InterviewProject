@@ -36,8 +36,8 @@ jobs:
 
       # 🌟 THE VALIDATOR: Ensure YAML syntax compiles perfectly
       - name: Validate Asset Bundle Syntax
-        run: databricks bundle validate -e ${{ env.DAB_ENV }}
+        run: databricks bundle validate -t ${{ env.DAB_ENV }}
 
       # 🌟 THE DEPLOYER: Idempotently syncs configurations & overrides live state
       - name: Deploy Databricks Asset Bundle
-        run: databricks bundle deploy -e ${{ env.DAB_ENV }}
+        run: databricks bundle deploy -t ${{ env.DAB_ENV }}
