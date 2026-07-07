@@ -85,6 +85,7 @@ resources:
       environments:
           - environment_key: dbt_serverless_env
             spec:
+              environment_version: "2"
               dependencies:
                 - dbt-core>=1.8.0
                 - dbt-databricks>=1.8.0
